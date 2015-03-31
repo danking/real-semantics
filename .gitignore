@@ -3,3 +3,6 @@
 *.bbl
 *.blg
 *.pdf
+*.o
+*.a
+*.out
