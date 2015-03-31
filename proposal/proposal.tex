@@ -1,0 +1,221 @@
+%-----------------------------------------------------------------------------
+%
+%               Template for sigplanconf LaTeX Class
+%
+% Name:         sigplanconf-template.tex
+%
+% Purpose:      A template for sigplanconf.cls, which is a LaTeX 2e class
+%               file for SIGPLAN conference proceedings.
+%
+% Guide:        Refer to "Author's Guide to the ACM SIGPLAN Class,"
+%               sigplanconf-guide.pdf
+%
+% Author:       Paul C. Anagnostopoulos
+%               Windfall Software
+%               978 371-2316
+%               paul@windfall.com
+%
+% Created:      15 February 2005
+%
+%-----------------------------------------------------------------------------
+
+
+\documentclass[preprint, authoryear]{sigplanconf}
+
+% The following \documentclass options may be useful:
+
+% preprint      Remove this option only once the paper is in final form.
+% 10pt          To set in 10-point type instead of 9-point.
+% 11pt          To set in 11-point type instead of 9-point.
+% authoryear    To obtain author/year citation style instead of numeric.
+
+\usepackage{amsmath}
+
+
+\begin{document}
+
+\special{papersize=8.5in,11in}
+\setlength{\pdfpageheight}{\paperheight}
+\setlength{\pdfpagewidth}{\paperwidth}
+
+\conferenceinfo{CONF 'yy}{Month d--d, 20yy, City, ST, Country} 
+\copyrightyear{20yy} 
+\copyrightdata{978-1-nnnn-nnnn-n/yy/mm} 
+\doi{nnnnnnn.nnnnnnn}
+
+% Uncomment one of the following two, if you are not going for the 
+% traditional copyright transfer agreement.
+
+%\exclusivelicense                % ACM gets exclusive license to publish, 
+                                  % you retain copyright
+
+%\permissiontopublish             % ACM gets nonexclusive license to publish
+                                  % (paid open-access papers, 
+                                  % short abstracts)
+
+% \titlebanner{banner above paper title}        % These are ignored unless
+% \preprintfooter{short description of paper}   % 'preprint' option specified.
+
+\title{Real Semantics}
+% \subtitle{Subtitle Text, if any}
+
+\authorinfo{Hannah Blumberg \and Yihe Huang \and Dan King \and Paola Mariselli}
+           {Harvard University: School of Engineering and Applied Sciences}
+           {hannahblumberg@college.harvard.edu
+       \and yihehuang@g.harvard.edu
+       \and daniel.zidan.king@gmail.com
+       \and paolamariselli@fas.harvard.edu}
+
+\maketitle
+
+\begin{abstract}
+The phrase ``floating-point number'' is a lie. Floating-point arithmetic is
+fundamentally interval arithmetic wherein the interval lengths are a function of
+the median point.
+
+We propose a project to develop an automated tool that reasons about the
+accuracy of floating-point arithmetic. It aims to discover instances where
+the floating-point arithmetic result is not the most accurate floating-point
+approximation to the real number implied by the algorithm (if interpreted with
+real number, instead of floating-point, semantics).
+\end{abstract}
+
+% \category{CR-number}{subcategory}{third-level}
+
+% general terms are not compulsory anymore, 
+% you may leave them out
+
+\keywords
+floating-point arithmetic, bug finding
+
+\section{Introduction}
+
+The tool will be applied to programs written in the C language that us:
+\begin{itemize}
+\item floating-point numbers,
+\item elementary floating-point operations, and
+\item transcendental floating-point operations
+\end{itemize}
+
+There are 8.4 million results for the keyword ``float'' in the C source code on
+GitHub. This certainly over counts the number of files using floating-point
+arithmetic, but we're confident this is a large class of programs.
+
+We may further divide the class of floating-point-arithmetic-using programs, a
+non-exhaustive list follows.
+\begin{itemize}
+\item physical and biological simulations
+\item video games, both for graphics and physics
+\item signal processing applications, such as image and sound processing
+\item embedded real-time control systems
+\item embedded sensor systems
+\end{itemize}
+
+\section{The Ideal Product}
+
+The ideal product of our research is an LLVM interpreter, modified such that:
+
+\begin{itemize}
+\item each floating-point number has a real number companion
+\item floating-point operations (both elementary and transcendental) induce real
+  number operations on the companions
+\item a warning is issued for each floating-point output that is not the best
+  approximation to its real number companion
+\end{itemize}
+
+Moreover, the interpreter should be sufficiently efficient for use in a major
+software company's build cycle. Consider for example Facebook's standards as
+described in the INFER paper~\cite{infer}. Maintaining this performance may
+require implementing performance heuristics that leverage real number semantics,
+such as replacing triangle number sums.
+
+Finally, the project will generate a corpus of in-the-wild floating-point
+arithmetic errors.
+
+\section{The Minimal Product}
+
+The minimal product of our research is an LLVM interpreter, modified such that:
+
+\begin{itemize}
+\item every floating-point number has a real number companion
+\item elementary floating-point operations induce rational number operations on the
+  companions
+\end{itemize}
+
+\section{Possibility of Failure}
+
+We are most concerned about modifying the LLVM interpreter because we
+collectively have no experience with LLVM. We are also concerned with:
+
+\begin{itemize}
+\item finding a sufficient large and interesting corpus of programs
+\item finding non-trivial, correctness-relevant floating-point arithmetic bugs
+\end{itemize}
+
+\section{Technologies}
+
+We will not implement a new interpreter nor a new C compiler. We will directly
+analyze LLVM bytecode, reusing an existing LLVM interpreter. Moreover, we will
+not implement a new Real number library for C. We will use RealLib, a GNU LGPL
+licensed library for performing both elementary and transcendental real number
+operations.
+
+\section{Related Work}
+
+If a single paper must be chosen, we believe the class as a group of programmers
+would benefit from reading the first few sections of \emph{What Every Computer
+  Scientist Should Know About Floating-Point Arithmetic} by David
+Goldberg~\cite{goldberg91}.
+
+\section{The One-Week Project}
+
+Our one week project is the production of a modified LLVM interpreter that uses
+real number semantics (for elementary operations) instead of floating-point
+semantics. This exercises our ability to correctly link with RealLib. It also
+provides us with an almost complete foundation of LLVM infrastructure for
+continuation with the multiple week project.
+
+\section{Collaboration}
+
+We have divided our one-week project into two major pieces:
+
+\begin{itemize}
+\item get the RealLib library working and generate a simple test suite
+\item modify the LLVM interpreter to use real number semantics
+\end{itemize}
+
+We've decided that Dan and Paola will work on the first bullet while Yihe and
+Hannah concurrently work on the second bullet.
+
+Our ideal, final project consists of a number of pieces:
+
+\begin{itemize}
+\item modifications to the LLVM interpreter to call RealLib
+\item generating a set test of test cases to debug our interpreter
+\item gathering a corpus of floating-point-arithmetic-using programs
+\item running experiments on the full corpus
+\item writing the report, generating figures, computing statistics, and
+  summarizing background knowledge
+\end{itemize}
+
+\acks
+
+We acknowledge Eddie's face
+
+% We recommend abbrvnat bibliography style.
+
+\bibliographystyle{abbrvnat}
+
+\bibliography{proposal}
+
+% The bibliography should be embedded for final submission.
+
+\end{document}
+
+%                       Revision History
+%                       -------- -------
+%  Date         Person  Ver.    Change
+%  ----         ------  ----    ------
+
+%  2013.06.29   TU      0.1--4  comments on permission/copyright notices
+
