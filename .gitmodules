@@ -1,0 +1,3 @@
+[submodule "llvm-3.6.0"]
+	path = llvm-3.6.0
+	url = git@github.com:huangyihe/llvm-3.6.0.git
