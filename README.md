@@ -7,7 +7,7 @@
  * A modern C++ toolchain (>=`g++-4.8` or a recent version of `clang`)
  * MPFR library (and also GMP, but it should install automatically if you get it through some sort of package manager)
  * List of dependencies described in the [LLVM Getting Started page](http://llvm.org/docs/GettingStarted.html#software). A few comments...
-   * Install the `build-essential` if using Ubuntu Linux: that should install most of the required packages
+   * Install the `build-essential` package if using Ubuntu Linux: that should install most of the required packages
    * If you're building on Mac, make sure to install all packages required by LLVM, including something called `m4` and a bunch of compression libraries
    * `g++-multilib`, if you are using `gcc` to build LLVM
    * `cmake`, which is used to configure the build system
@@ -35,8 +35,8 @@ $ git pull
 ```bash
 $ mkdir build
 $ cd build
-build/$ cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/toolchains -DLLVM_ENABLE_EH=ON -DLLVM_ENABLE_RTTI=ON
-build/$ make -j2 # or whatever number of processers you have
+build]$ cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/toolchains -DLLVM_ENABLE_EH=ON -DLLVM_ENABLE_RTTI=ON
+build]$ make -j2 # or whatever number of processors you have
 ```
 
 4. Keep your fingers crossed and hope that it will build without error... Actually it will probably fail at a final linking step because I haven't figured out the Makefile yet. If that happens, go to `build/tools/lli/CMakeFiles/lli.dir/link.txt` and add `-lmpfr -lgmp` to the end of that file, and run `make` (in the `build` directory!) again.
