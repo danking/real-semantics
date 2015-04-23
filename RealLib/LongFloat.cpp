@@ -24,7 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <malloc.h>
+// #include <malloc.h>
 
 #include <iostream>
 #include <iomanip>
