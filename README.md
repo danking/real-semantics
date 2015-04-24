@@ -23,21 +23,25 @@ $ git submodule init && git submodule update
 $ cd llvm-3.6.0
 ```
 
-2. Note that at this step you are looking at an UNMODIFIED, ORIGINAL LLVM-3.6.0 copy! To get the custom LLVM, switch to master branch and apply the latest changes:
+2. If you would like to get the latest LLVM code (which could be broken), switch to master branch and do a pull:
 
 ```bash
 $ git checkout master
 $ git pull
 ```
 
+You can skip this step if you just want to try it out.
+
 3. Now we can start building LLVM:
 
 ```bash
 $ mkdir build
 $ cd build
-build]$ cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/toolchains -DLLVM_ENABLE_EH=ON -DLLVM_ENABLE_RTTI=ON
+build]$ cmake .. -DLLVM_ENABLE_EH=ON -DLLVM_ENABLE_RTTI=ON
 build]$ make -j2 # or whatever number of processors you have
 ```
+
+During the third (`cmake`) step, you can pass `'-DCMAKE_BUILD_TYPE=DEBUG -DLLVM_ENABLE_ASSERTIONS=ON'` as additional arguments if you wish to do a debug build.
 
 4. Keep your fingers crossed and hope that it will build without error... Actually it will probably fail at a final linking step because I haven't figured out the Makefile yet. If that happens, go to `build/tools/lli/CMakeFiles/lli.dir/link.txt` and add `-lmpfr -lgmp` to the end of that file, and run `make` (in the `build` directory!) again.
 
@@ -58,7 +62,7 @@ $ clang++ -S -emit-llvm -c program.c -o program.ll
 
 It works without the `-c` option as well, but it will link the entire stdlib so it won't be very human readable.
 
-3. To run the byte code with `lli`, use the `.bc` file:
+3. To run the byte code with `lli`, use the `.bc` file. DO NOT forget to invoke `lli` with the `-force-interpreter` flag:
 ```bash
 # make sure you are using the correct lli executable...
 $ ./lli -force-interpreter program.bc
