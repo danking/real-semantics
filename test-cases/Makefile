@@ -1,14 +1,15 @@
-default: test-case1-mpfr test-case1-float test-case1-reallib
+BITCODEFILES=test-case1-float.bc test-case2-pow.bc test-case3-malloc.bc test-case4-memcpy.bc
+READABLEFILES=test-case1-float.ll test-case2-pow.ll test-case3-malloc.ll test-case4-memcpy.ll
 
-run:
-	echo 'MPFR:\n' && ./test-case1-mpfr && echo 'FLOAT:\n' && ./test-case1-float && echo 'REALLIB:' && ./test-case1-reallib
+default: $(BITCODEFILES)
+
+readable: $(READABLEFILES)
 
 clean:
-	rm -rf test-case1-mpfr test-case1-float
+	rm -rf $(BITCODEFILES)
 
-test-case1-reallib : test-case1-reallib.cpp
-	clang++ test-case1-reallib.cpp -I../RealLib -L../RealLib \
-    -o test-case1-reallib ../RealLib/Real.a -lm
+%.bc: %.cpp
+	clang++ -emit-llvm -c $*.cpp -o $@
 
-%: %.cpp
-	clang++ $@.cpp -lmpfr -lgmp -o $@
+%.ll: %.cpp
+	clang++ -S -emit-llvm -c $*.cpp -o $@
