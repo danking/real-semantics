@@ -1,5 +1,7 @@
-BITCODEFILES=raytracer.bc
-READABLEFILES=raytracer.ll
+BITCODEFILES=raytracer.bc misc-tests.bc
+READABLEFILES=raytracer.ll misc-tests.ll
+
+FLAGS=-fno-use-cxa-atexit
 
 default: $(BITCODEFILES)
 
@@ -9,7 +11,10 @@ clean:
 	rm -rf $(BITCODEFILES)
 
 %.bc: %.cpp
-	clang++ -emit-llvm -c $*.cpp -o $@
+	clang++ -emit-llvm $(FLAGS) -c $*.cpp -o $@
+
+%.bc: %.c
+	clang -emit-llvm $(FLAGS) -c $*.c -o $@
 
 %.ll: %.cpp
-	clang++ -S -emit-llvm -c $*.cpp -o $@
+	clang++ -S -emit-llvm $(FLAGS) -c $*.cpp -o $@
