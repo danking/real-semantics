@@ -26,7 +26,14 @@ int main (int argc, char ** argv) {
                        , 0.09, 0.09, 0.09
                        , 10000000};
 
-  float avg = average(array, 100);
+  int length = 100;
+  float sum = 0;
+  for (int i = 0; i < length; ++i) {
+    sum = sum + *(array + i);
+  }
+  printf("%f\n", sum);
+  float avg =  sum / length;
+  /* float avg = average(array, 100); */
 
   printf("%f\n", avg);
 
@@ -34,11 +41,11 @@ int main (int argc, char ** argv) {
 }
 
 
-float average(float * array, int length) {
-  float sum = 0;
-  for (int i = 0; i < length; ++i) {
-    sum = sum + *(array + i);
-  }
-  printf("%f\n", sum);
-  return sum / length;
-}
+/* float average(float * array, int length) { */
+/*   float sum = 0; */
+/*   for (int i = 0; i < length; ++i) { */
+/*     sum = sum + *(array + i); */
+/*   } */
+/*   printf("%f\n", sum); */
+/*   return sum / length; */
+/* } */
