@@ -1,8 +1,6 @@
 #include <stdio.h>
 
-float average(float * array, int length);
 
-int main (int argc, char ** argv) {
   float array [100] = { 10000000
                        , 0.09, 0.09, 0.09, 0.09, 0.09
                        , 0.09, 0.09, 0.09, 0.09, 0.09
@@ -25,6 +23,10 @@ int main (int argc, char ** argv) {
                        , 0.09, 0.09, 0.09, 0.09, 0.09
                        , 0.09, 0.09, 0.09
                        , 10000000};
+
+float average(float * array, int length);
+
+int main (int argc, char ** argv) {
 
   int length = 100;
   float sum = 0;
