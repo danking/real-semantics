@@ -15,34 +15,34 @@
 
 ### After you get all the tools...
 
-1. Clone the [real-semantics repository](https://github.com/danking/real-semantics), and checkout the `llvm` submodule:
+1. Clone this repository and checkout the `llvm` submodule:
 
-```bash
-$ git clone git@github.com:danking/real-semantics.git
-$ cd real-semantics
-$ git submodule init && git submodule update
-$ cd llvm-3.6.0
-```
+   ```bash
+   $ git clone git@github.com:danking/real-semantics.git
+   $ cd real-semantics
+   $ git submodule init && git submodule update
+   $ cd llvm-3.6.0
+   ```
 
 2. If you would like to get the latest LLVM code (which could be broken), switch to master branch and do a pull:
 
-```bash
-$ git checkout master
-$ git pull
-```
+   ```bash
+   $ git checkout master
+   $ git pull
+   ```
 
 You can skip this step if you just want to try it out.
 
 3. Now we can start building LLVM:
 
-```bash
-$ mkdir build
-$ cd build
-build]$ cmake .. -DLLVM_ENABLE_EH=ON -DLLVM_ENABLE_RTTI=ON -DLLVM_ENABLE_FFI=ON
-build]$ make -j2 # or whatever number of processors you have
-```
+   ```bash
+   $ mkdir build
+   $ cd build
+   build$ cmake .. -DLLVM_ENABLE_EH=ON -DLLVM_ENABLE_RTTI=ON -DLLVM_ENABLE_FFI=ON
+   build$ make -j2 # or whatever number of processors you have
+   ```
 
-During the third (`cmake`) step, you can pass `'-DCMAKE_BUILD_TYPE=DEBUG -DLLVM_ENABLE_ASSERTIONS=ON'` as additional arguments if you wish to do a debug build.
+   During the third (`cmake`) step, you can pass `'-DCMAKE_BUILD_TYPE=DEBUG -DLLVM_ENABLE_ASSERTIONS=ON'` as additional arguments if you wish to do a debug build.
 
 4. Keep your fingers crossed and hope that it will build without error... Actually it will probably fail at a final linking step because I haven't figured out the Makefile yet. If that happens, go to `build/tools/lli/CMakeFiles/lli.dir/link.txt` and add `-lmpfr -lgmp` to the end of that file, and run `make` (in the `build` directory!) again.
 
@@ -54,17 +54,20 @@ During the third (`cmake`) step, you can pass `'-DCMAKE_BUILD_TYPE=DEBUG -DLLVM_
 
 2. Generating byte code is easy:
 
-```bash
-# this will generate the actual "byte" code
-$ clang -emit-llvm -c program.c -o program.bc
-# this will generate a human readable LLVM IR program
-$ clang -S -emit-llvm -c program.c -o program.ll
-```
+   ```bash
+   # this will generate the actual "byte" code
+   $ clang -emit-llvm -c program.c -o program.bc
+   # this will generate a human readable LLVM IR program
+   $ clang -S -emit-llvm -c program.c -o program.ll
+   ```
 
-Be sure to supply the `-c` option; `-emit-llvm` doesn't work without it. For some reason `libffi` (the library used to handle external library calls) doesn't like C++ stuff like `std::cout`, so it probably only works with C-style functions right now.
+   Notes:
+   * Be sure to supply the `-c` flag; `-emit-llvm` doesn't work without it.
+   * Supply the `-g` flag if you want extra debugging information (e.g. line number)
+   * Supply the `-fno-use-cxa-atexit` flag if you encounter a `__dso_handle`-related error in the next step.
 
 3. To run the byte code with `lli`, use the `.bc` file. DO NOT forget to invoke `lli` with the `-force-interpreter` flag:
-```bash
-# make sure you are using the correct lli executable...
-$ ./lli -force-interpreter program.bc
-```
+   ```bash
+   # make sure you are using the correct lli executable...
+   $ ./lli -force-interpreter program.bc
+   ```
