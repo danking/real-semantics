@@ -24,14 +24,12 @@
    $ cd llvm-3.6.0
    ```
 
-2. If you would like to get the latest LLVM code (which could be broken), switch to master branch and do a pull:
+2. If you would like to get the latest LLVM code (which could be broken), switch to master branch and do a pull. You can skip this step if you just want to try it out.
 
    ```bash
    $ git checkout master
    $ git pull
    ```
-
-You can skip this step if you just want to try it out.
 
 3. Now we can start building LLVM:
 
