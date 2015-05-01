@@ -74,5 +74,6 @@ int main (int argc, char ** argv) {
   }
   float avg =  sum / LENGTH;
 
+  printf("avg is %f\n", avg);
   return 0;
 }
