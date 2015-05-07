@@ -1,4 +1,5 @@
 #include <math.h>
+#include <stdio.h>
 
 /*
  *http://leafea.s3-website-us-east-1.amazonaws.com/writing/formula.pdf
@@ -25,8 +26,9 @@ int isInside(float x, float y, int n, float xs[], float ys[]) {
 }
 
 int main(void) {
-  float xs[] = {-1.0, -0.1, 1.0};
-  float ys[] = {-0.1, 1.0, -0.1};
-  isInside(0.0001, 0.0001, 3, xs, ys);  
+  float xs[] = {-10000000.0, 0.0, 10000000.0};
+  float ys[] = {0.0, 0.01, 0.0};
+  int result = isInside(0.0, 0.0, 3, xs, ys);
+  printf("Answer: %d\n", result);
   return 0;
 }
