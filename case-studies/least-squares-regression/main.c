@@ -101,9 +101,9 @@ int main(int argc, char ** argv) {
     printf("derivative_b = %f\n", db);
     printf("derivative_c = %f\n", dc);
     printf("mag = %f\n", mag);
-    parameters.a = parameters.a - (da) / max(1, (fabs(da) - parameters.a));
-    parameters.b = parameters.b - (db) / max(1, (fabs(db) - parameters.b));
-    parameters.c = parameters.c - (dc) / max(1, (fabs(dc) - parameters.c));
+    parameters.a = parameters.a - (da) / mag;
+    parameters.b = parameters.b - (db) / mag;
+    parameters.c = parameters.c - (dc) / mag;
     printf("\n");
   }
 
