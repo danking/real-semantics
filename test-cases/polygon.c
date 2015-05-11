@@ -33,11 +33,11 @@ int isInsideImp(float x, float y, int n, float xs[], float ys[]) {
 }
 
 int main(void) {
-  float xs[] = {-0.00001, 0, 0.00001};
-  float ys[] = {0, 0.00001, 0};
+  float xs[] = {-0.0001, 0, 0.0001};
+  float ys[] = {0, 0.0001, 0};
   int n = 3;
   float testx = 0;
-  float testy = 0.0000101;
+  float testy = 0.0001001;
 
   int result = isInsideImp(testx, testy, n, xs, ys);
   printf("Imprecise Algorithm: %d\n", result);
