@@ -16,10 +16,7 @@ int isInside(float x, float y, int n, float xs[], float ys[]) {
     vy = y - ys[(i+1)%n];
     angle += atan2f(uy,ux) - atan2f(vy,vx);
   }
-  if (fabsf(angle) < 2*M_PI) {
-    return 1;
-  }
-  return 0;
+  return (fabsf(angle) <= 2*M_PI);
 }
 
 int isInsideImp(float x, float y, int n, float xs[], float ys[]) {
@@ -32,10 +29,7 @@ int isInsideImp(float x, float y, int n, float xs[], float ys[]) {
     vy = y - ys[(i+1)%n];
     angle += (ux*vx + uy*vy)/(sqrt(pow(ux,2) + pow(uy,2)) * sqrt(pow(vx,2) + pow(vy,2)));
   }
-  if (fabsf(angle) < 2*M_PI) {
-    return 1;
-  }
-  return 0;
+  return (fabsf(angle) <= 2*M_PI);
 }
 
 int main(void) {
@@ -44,6 +38,7 @@ int main(void) {
   int n = 3;
   float testx = 0;
   float testy = 0.0000101;
+
   int result = isInsideImp(testx, testy, n, xs, ys);
   printf("Imprecise Algorithm: %d\n", result);
   result = isInside(testx, testy, n, xs, ys);
