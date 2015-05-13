@@ -1,25 +1,16 @@
-#include <iostream>
-#include <iomanip>
-#include <vector>
+#include <stdio.h>
 
-#define PREC 4096
 
 int main(int argc, char ** argv) {
-  std::vector<float> xs;
-  xs.push_back(1000000);
-  xs.push_back(0.01);
-  xs.push_back(0.01);
-  xs.push_back(0.01);
-  xs.push_back(0.01);
+  double xs [15] = {100000000000, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01};
 
-  float sum = 0;
+  double sum = 0;
 
   for (int i=0; i < 5; ++i) {
-    std::cout << std::setprecision(10) << sum << " + " << xs[i] << std::endl;
     sum += xs[i];
   }
 
-  std::cout << sum << std::endl;
+  printf("%f\n", sum);
 
   return 0;
 }
