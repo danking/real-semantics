@@ -2,7 +2,7 @@
 #include "challenge.h"
 
 #define TEST_CASE_COUNT 15
-#define SHOW_REFERENCE 0
+#define HIDE_REFERENCE 1
 
 double test_cases [TEST_CASE_COUNT * 3] =
   { 100           , -8356218543e201   , -321432,  // 0
@@ -28,7 +28,7 @@ int main(int argc, char ** argv) {
     double ref = reference(test_cases[i + 0], test_cases[i + 1], test_cases[i + 2]);
     double soln = solution(test_cases[i + 0], test_cases[i + 1], test_cases[i + 2]);
 
-    if (SHOW_REFERENCE) {
+    if (HIDE_REFERENCE) {
       printf("For test case %2d, the reference implementation was: %.16e\n", i / 3, ref);
       printf("                            your solution produced: %.16e\n", soln);
     } else {
