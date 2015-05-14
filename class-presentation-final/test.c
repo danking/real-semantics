@@ -23,9 +23,10 @@ double test_cases [TEST_CASE_COUNT * 3] =
 int main(int argc, char ** argv) {
   int i;
   for (i = 0 ; i < TEST_CASE_COUNT * 3 ; i += 3) {
-    double first = f1(test_cases[i + 0], test_cases[i + 1], test_cases[i + 2]);
-    double second = f2(test_cases[i + 0], test_cases[i + 1], test_cases[i + 2]);
-    printf("For test case %d, the results were: %.16f, %.16f\n", i / 3, first, second);
+    double ref = reference(test_cases[i + 0], test_cases[i + 1], test_cases[i + 2]);
+    double soln = solution(test_cases[i + 0], test_cases[i + 1], test_cases[i + 2]);
+    printf("For test case %.2d, the reference implementation was: %.16e\n", i / 3, ref);
+    printf("                            your solution produced: %.16e\n", soln);
   }
   printf("Ran %d test cases.\n", i / 3);
   return 0;
