@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "challenge.h"
 
-#define TEST_CASE_COUNT 14
+#define TEST_CASE_COUNT 15
 #define SHOW_REFERENCE 0
 
 double test_cases [TEST_CASE_COUNT * 3] =
