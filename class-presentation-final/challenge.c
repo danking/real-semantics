@@ -25,6 +25,10 @@
  * You'll need to modify the `REAL_LLI` variable in `Makefile` to point to the
  * executable you downloaded. You should also have `clang` installed
  *
+ * You can set the `HIDE_REFERENCE` macro to 0 to prevent the test harness from
+ * printing (and thus Real Semantics from reporting errors on) the reference
+ * implementation
+ *
  * Also, the rocket, unless this code is fixed, will destroy the space station
  * in 10 minutes. Oh, and due to Bay's Rule it will then spontaneously destroy
  * Earth and the Universe.
@@ -43,17 +47,21 @@ double reference(double a, double b, double c) {
 /* SOLUTION */
 
 double solution(double a, double b, double c) {
-  if (b < 0) {
-    double numerator = 4*a*c;
-    double denominator = (-b + sqrt(b*b - 4*a*c)) * 2*a;
-    double result = numerator / denominator;
-    return result;
-  } else if (0 <= b && b <= 10e127) {
-    double numerator = -b - sqrt(b*b - 4*a*c);
-    double denominator = 2*a;
-    double result = numerator / denominator;
-    return result;
-  } else    /* b > 10^127 */{
-    return -b/a + c/b;
-  }
+  double numerator = (-b-sqrt(b*b-4.0000000000000*a*c)); /* maximum zeros for maximum precision */
+  double denominator = 2.0 * a;
+  double result = numerator / denominator;
+  return result;
+  /* if (b < 0) { */
+  /*   double numerator = 4*a*c; */
+  /*   double denominator = (-b + sqrt(b*b - 4*a*c)) * 2*a; */
+  /*   double result = numerator / denominator; */
+  /*   return result; */
+  /* } else if (0 <= b && b <= 10e127) { */
+  /*   double numerator = -b - sqrt(b*b - 4*a*c); */
+  /*   double denominator = 2*a; */
+  /*   double result = numerator / denominator; */
+  /*   return result; */
+  /* } else    /\* b > 10^127 *\/{ */
+  /*   return -b/a + c/b; */
+  /* } */
 }
