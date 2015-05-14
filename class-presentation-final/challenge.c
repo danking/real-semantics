@@ -31,16 +31,41 @@
  *
  * Have fun!
  */
+/* double f1(double a, double b, double c) { */
+/*   double numerator = (-b-sqrt(b*b-4.0000000000000*a*c)); /\* maximum zeros for maximum precision *\/ */
+/*   double denominator = 2.0 * a; */
+/*   double result = numerator / denominator; */
+/*   return result; */
+/* } */
+
+/* double f2(double a, double b, double c) { */
+/*   double numerator = (-b+sqrt(b*b-4.0*a*c)); */
+/*   double denominator = 2.0 * a; */
+/*   double result = numerator / denominator; */
+/*   return result; */
+/* } */
+
+/* SOLUTION */
+
 double f1(double a, double b, double c) {
-  double numerator = (-b-sqrt(b*b-4.0000000000000*a*c)); /* maximum zeros for maximum precision */
-  double denominator = 2.0 * a;
-  double result = denominator / numerator;
-  return result;
+  if (b < 0) {
+    double numerator = 4*a*c;
+    double denominator = (-b + sqrt(b*b - 4*a*c)) * 2*a;
+    double result = numerator / denominator;
+    return result;
+  } else if (0 <= b && b <= 10e127) {
+    double numerator = -b - sqrt(b*b - 4*a*c);
+    double denominator = 2*a;
+    double result = numerator / denominator;
+    return result;
+  } else    /* b > 10^127 */{
+    return -b/a + c/b;
+  }
 }
 
 double f2(double a, double b, double c) {
   double numerator = (-b+sqrt(b*b-4.0*a*c));
   double denominator = 2.0 * a;
-  double result = denominator / numerator;
+  double result = numerator / denominator;
   return result;
 }
