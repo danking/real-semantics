@@ -62,7 +62,7 @@
    For complete debugging information, use the [clang-3.6 executable](https://github.com/huangyihe/llvm-3.6.0/releases/download/0.0/clang-3.6):
 
    ```bash
-   $ ./clang-3.6 -I/usr/include/clang/3.4.2/include -emit-llvm -c -g program.c -o program.bc
+   $ ./clang-3.6 -I/usr/include/clang/3.4/include -emit-llvm -c -g program.c -o program.bc
    ```
 
    Notes:
