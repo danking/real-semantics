@@ -1,0 +1,281 @@
+\section{Evaluation}
+
+In order to evaluate Real Semantics, we first describe our performance on a particular program, then we present a number of case studies that demonstrate a few possible use cases of our tool. For the case studies, we chose programs that are significantly smaller than those found in production code both because they allow us to focus on the use of our tool rather than the intricacies of the programs and because we did not have the computational resources required to test longer programs. The latter issue will be further addressed in section~\ref{sec:future}.
+
+Nevertheless, one could easily imagine how the relatively small computations and algorithms described here might be used in the context of a larger program; the instances of floating-point imprecision would still exist and may have more significant consequences.
+
+\subsection{Ray Tracer}
+
+In order to get a sense of the performance of our tool, we considered a ray tracing program. Ray tracing is technique used to generate images by tracing the expected path of light through pixels in a plane. We selected a basic program that creates a simple image, shown in Figure~\ref{fig:ray} \cite{raytracer}.
+
+\begin{figure}[t!]
+\centering
+\includegraphics[width=2.5cm]{ray.png}
+\caption{Ray Tracer Output}
+\label{fig:ray}
+\end{figure}
+
+When executed natively, this program takes approximately 0.629 seconds to run. When executed using the (unmodified) LLVM interpreter, it takes approximately 12 minutes and 20.860 seconds to execute. Using Real Semantics (the modified LLVM interpreter), it takes approximately 16 minutes and 10.675 seconds to execute.
+
+It is clear that the major limitation is not our modifications to the LLVM interpreter, but the interpreter itself. We discuss possible solutions to this performance issue in the section~\ref{sec:future}.
+
+\subsection{Probability}
+
+A simple program that demonstrates the impact of floating-point semantics is one that calculates the probability that at least one of two independent events occur, $P(A \cup B)$. Consider the following two mathematically equivalent calculations:
+
+\begin{enumerate}
+\item $P(A \cup B) = P(A) + P(B) - P(A)P(B)$
+\item $P(A \cup B) = 1 - (1 - P(A))(1 - P(B))$
+\end{enumerate}
+
+Regardless of the probabilities $P(A)$ and $P(B)$, these two formulas will produce the same result using real number semantics; however, if $P(A)$ are small, the first formula will provide a much more accurate result. This is because very small floating-point values (e.g. $P(A)P(B)$) can be more accurately represented than floating-point values that are close to 1 (e.g. $(1 - P(A))$ and $(1 - P(B))$).
+
+\begin{figure}[t!]
+\begin{lstlisting}
+int probAUB(float pa, float pb) {
+  
+  float f1 = pa + pb - pa * pb;
+  printf("P(A)+P(B)-P(A)P(B)=%.8f\n", f1);
+  
+  float f2 = 1 - (1 - pa)*(1 - pb);
+  printf("1-(1-P(A))(1-P(B))=%.8f\n", f2);
+  
+  return 0;
+}
+\end{lstlisting}
+\caption{Calculating $P(A \cup B)$}
+\label{fig:prob}
+\end{figure}
+
+Figure~\ref{fig:numericint} shows a simple function that calculates $P(A \cup B)$ given $P(A)$ and $P(B)$ using both formulas discussed above.
+
+If we were to run this function with the input $\texttt{pa} = 5\text{\sc{e}-}8$ and $\texttt{pb} = 2\text{\sc{e}-}10$, our tool would print the following:
+
+{\tt\footnotesize
+P(A)+P(B)-P(A)P(B)=0.00000005}
+
+{\tt\footnotesize
+\textcolor{red!70!black} {
+Possible precision loss at printf!\\
+Our checker is expecting the output string: 5.02000006e-08,\\
+but with floating-point imprecision the output string is instead: 5.96046448e-08}}
+
+{\tt\footnotesize
+1-(1-P(A))(1-P(B))=0.00000006
+}
+
+Whereas the first formula computed $P(A \cup B)$ without a notable loss in precision, the error message informs us that we lost precision when computing $P(A \cup B)$ using the second formula. Again, we expect these two computations to be equivalent, but they produce different results under floating-point semantics when the probabilities $P(A)$ and $P(B)$ are small.
+
+Our tool correctly catches the loss of precision caused by the second formula and reports it to the user.
+
+\subsection{Matrix Inversion}
+
+\begin{figure}[t!]
+\begin{lstlisting}
+int main()
+{
+  float a[25][25], k, d;
+
+  k = 3;
+  a[0][0] = 3; a[0][1] = 5; a[0][2] = 2;
+  a[1][0] = 1; a[1][1] = 5; a[1][2] = 8;
+  a[2][0] = 6.6; a[2][1] = 11;
+  a[2][2] = 4.4;
+  
+  d = determinant(a, k);
+  if (d == 0)
+    printf("not possible\n");
+  else
+    cofactor(a, k);
+  return 0;
+}
+\end{lstlisting}
+\caption{Code Snippet of a Matrix Inversion Program}
+\label{fig:matrixinv}
+\end{figure}
+
+Calculating the inverse of a matrix can be used to solve linear systems. Before calculating the inverse, the programmer should first verify that the inverse of a matrix exists by checking whether the {\em determinant} of the matrix is zero. However, due to floating-point imprecision, simple equality checks like {\tt det == 0} are likely to always return false. Figure~\ref{fig:matrixinv} shows the main routine of a matrix inversion program retrieved from the Internet~\cite{matinvprogram}. Lines 6 through 9 show the input matrix, whose determinant should be zero in real domain. Due to floating-point imprecision, however, numbers like 6.6 and 4.4 cannot be represented precisely and will be rounded. This causes the check on line 12 to return false; thus, the program will continue with the calculation and end up with a wildly inaccurate result.
+
+Running this program with our tool, however, reveals this problem. During the execution of the program, our tool generated error messages, such as
+
+\textcolor{red!70!black} {
+{\tt \footnotesize
+Possible precision loss at printf!\\
+Our checker is expecting the output string: -0.000002,\\
+but with floating-point imprecision the output string is instead: -0.000015}
+}
+
+These messages were triggered by a {\tt printf} call that prints out the calculated determinant of the matrix. The determinant values are very different when calculated with different precisions, indicating a significant imprecision error. The suspiciously small determinant values derived by either precision should alert the programmer of the possibility that an inverse actually does not exist.
+
+Instead of doing a simple equality check like the one on line 12, an experienced programmer would check whether the calculated value falls within a small interval around zero, and let the program generate a warning if this is the case. This approach is theoretically satisfying as well: computing the equality of two real numbers is generally uncomputable. Checking for inclusion in a rational-bounded interval is, in contrast, computable.
+
+\subsection{Numeric Integral}
+
+\begin{figure}[t!]
+\begin{lstlisting}
+int main() {
+  float lower = 0.0;
+  float upper = M_PI;
+  float step = 0.0001;
+
+  float result = 0.0;
+  float x;
+
+  for (x = lower; x < upper;
+      x += step) {
+    result += sin(x) * step;
+  }
+
+  printf("%f\n", result);
+
+  return 0;
+}
+\end{lstlisting}
+\caption{Calculating $\int_{0}^{\pi}\sin(x)dx$}
+\label{fig:numericint}
+\end{figure}
+
+We also used our tool to detect floating-point imprecision in numeric integral calculation. Figure~\ref{fig:numericint} shows a program that computes the numeric integral $\int_{0}^{\pi}\sin(x)dx$ using a step size of 0.0001. Our tool reports multiple error messages while the program is running:
+
+{\tt\footnotesize
+\textcolor{red!70!black} {
+Precision loss at < (numeric\_int.c:9)\\
+  got 1 = 3.14065 < 3.14159\\
+  expected 0 = 3.141600e+00 < 3.141593e+00\\
+}
+  ...\\
+\textcolor{red!70!black} {
+  Possible precision loss at printf!\\
+  Our checker is expecting the output string: 2.000000,\\
+  but with floating-point imprecision the output string is instead: 2.000405\\
+}
+}
+
+The ``{\tt Precision loss at <}'' messages indicate that the loop condition check at line 9 of the program returned different results between native float and MPFR. It is shown in this example that the loop executed for extra iterations under native float format, which resulted in a slightly larger integral result.
+
+This problem exemplifies how Real Semantics contributes both to finding functional correctness bugs as well as efficiency bugs. Due to floating-point imprecision, several extra and unnecessary loop iterations were performed that actually minimized accuracy. Real Semantics points towards the need for a more precise representation or perhaps a different loop iteration style.
+
+\subsection{Quadratic Formula}
+
+\begin{figure}
+\centering
+\begin{align*}
+\frac{-b \pm \sqrt{b^2 - 4ac}}{2a}
+\end{align*}
+\caption{The Quadratic Formula. We consider it with $\pm = -$.}
+\label{fig:quadratic_formula}
+\end{figure}
+
+The quadratic formula (Figure~\ref{fig:quadratic_formula}) needs neither introduction nor justification of its importance. As such, we proceed directly to an exploration of its error properties. We follow a similar development to \citeauthor{herbie} but using our tool in place of Herbie \cite{herbie}.
+
+We used Real Semantics to explore the floating-point imprecision on a small test suite for the following test inputs:
+
+$$a = 100, b = -8356218543 \times 10^{201}, c = -321432$$
+
+Real Semantics points out that the double-precision result, $-inf$, is different from the higher-precision result $-3.8466203145113220 \times 10^{-206}$. We see that a very small value has become negative infinity due to imprecision. This is often caused by catastrophic cancellation. In our case, the numerator should evaluate to almost zero. To address this issue we re-define the quadratic formula piecewise:
+
+\begin{align*}
+&\frac{2c}{-b + \sqrt{b^2 + 4ac}} & b < 0 \\
+&\frac{-b - \sqrt{b^2 - 4ac}}{2a} & b > 0
+\end{align*}
+
+The former is a simplification allowed by the observation that
+
+$$ x - y \approx \frac{x^2 - y^2}{x + y} $$
+
+This enables us to eliminate the square root, yielding:
+
+$$ \frac{b^2 - b^2 - 4ac}{2a(-b + \sqrt{b^2 - 4ac})} $$
+
+which simplifies to
+
+$$ \frac{2c}{-b + \sqrt{b^2 - 4ac}} $$
+
+Note that the subtraction in the numerator has become an addition in the numerator, thus eliminating the catastrophic cancellation: $(-b) - (-b)$.
+
+Unfortunately, on the aforementioned parameters, $a = 100,~b = -8356218543 \times 10^{201},~c = -321432$, our algorithm yields $0$ instead of a result on the order of $10^{-206}$; however, we have already infinitely improved our result.
+
+Next, we consider a test case involving a large positive $b$, mainly:
+
+$$a = 4328973e202,~b = 432789658 \times 10^{201},~c = 2134e2$$
+
+In this case, a series of cancellations between large values should yield a final result near $-9$. In reality, we compute $-inf$. Returning again to our expression, we note that large values of $b$ will overflow when squared. We first try re-using the same expression for negative $b$ when $b$ is large:
+
+\begin{align*}
+&\frac{2c}{(-b + \sqrt{b^2 - 4ac})} & b < 0 \textrm{ or } b > 10^{127}\\\\
+&\frac{-b - \sqrt{b^2 - 4ac}}{2a} & b > 0
+\end{align*}
+
+This improves the answer to $0$, but not quite to the desired $-9$. Unfortunately, we have now introduced catastrophic cancellation when the $b$ is a large positive number because the denominator approaches $-b + b$.
+
+For large positive values of $b$, we can manipulate the discriminant into the form $\sqrt{1 + \varepsilon}$, which has a series expansion for small $\varepsilon$ of $1 + \frac{1}{2}x + O(x^2)$. Inserting this term and massaging the equation slightly, we reveal a triply piecewise defined function:
+
+\begin{align*}
+&\frac{2c}{-b + \sqrt{b^2 - 4ac}} & b < 0 \\\\
+&\frac{-b - \sqrt{b^2 - 4ac}}{2a} & 0 \leq b \leq 10^{127} \\\\
+&-\frac{b}{a} + \frac{c}{b} & b > 10^{127}
+\end{align*}
+
+Now, the result of our double-precision calculation has as many accurate bits as the result of the higher-precision calculation! However, we are still inaccurate in a few digits on the following inputs:
+
+\begin{align*}
+&a = 100                       , b = -8356218543 \times 10^{201} , c = -321432 \\
+&a = -1 \times 10^{10}         , b = -1e10                       , c = 1e10 \\
+&a = 3.214323 \times 10^{-201} , b = 5e-100                      , c = 1.32423
+\end{align*}
+
+We leave it as an exercise to the reader to track down the source of these remaining inaccuracies.
+
+\subsection{Floating-Point Inaccuracies in Excel}
+
+For our final case-study, we wanted to see how our tool would fare on common floating-point errors. Microsoft Support created a list of five examples of simple floating-point computations that may give inaccurate results in Excel, a spreadsheet application that is widely used for computations \cite{excel}. We tested our program on C versions of the Excel examples, which are described in detail below.
+
+\subsubsection{Example Using Very Large Numbers}
+
+When $1.2\text{\sc{e}}200$ and $1\text{\sc{e}}100$ are added in Excel, the resulting value is $1.2\text{\sc{e}}200$. Our tool cannot catch the loss of precision in this example since $1.2\text{\sc{e}}200$ and $1\text{\sc{e}}100$ are too large to represent as floating-point numbers; however, we can detect this type of error when the numbers are within the range of possible C floating-point values.
+
+\subsubsection{Example Using Very Small Numbers}
+
+When $0.000123456789012345$ and $1$ are added in Excel, the resulting value is $1.00012345678901$ instead of $1.000123456789012345$. Our tool catches this loss of precision in the equivalent C program.
+
+\subsubsection{Repeating Binary Numbers and Calculations with Results Close to Zero}
+
+If $0.0001$ is added together $10000$ times in Excel, the resulting value is $0.999999999999996$ instead of $1$. Our tool catches this loss of precision in the equivalent C program, shown in Figure~\ref{fig:excel}.
+
+\begin{figure}[t!]
+\begin{lstlisting}
+float sumBinary(void) {
+  float sum = 0;
+  for (int i = 0; i < 10000; i++) {
+    sum += 0.0001;
+  }
+  printf("%.10f\n", sum);
+  return sum;
+}
+\end{lstlisting}
+\caption{Summing Binary Numbers}
+\label{fig:excel}
+\end{figure}
+
+\subsubsection{Example Adding a Negative Number}
+
+Excel computes $(43.1 - 43.2) + 1$ as $0.899999999999999$ instead of $0.9$. Our tool is able to catch this loss of precision if the computation is done in multiple steps. In this case, our tool will produce an error message for a program containing the following C code:
+
+{\tt\footnotesize
+float A1 = (43.1 - 43.2);\\
+A1 += 1;\\
+printf("\%.10f", A1);
+}
+
+but not when it is replaced with:
+
+{\tt\footnotesize
+float A1 = (43.1 - 43.2) + 1;\\
+printf("\%.10f", A1);
+}
+
+We are unable to detect the floating point imprecision in the second piece of code because the loss of precision occurs before the value is stored as a \texttt{float}. In other words, by the time we are able to create a \smartfloat~for \texttt{A1}, the loss of precision has already occurred. This is one limitation of our tool.
+
+\subsubsection{Example When a Value Reaches Zero}
+
+Excel computes $1.333+1.225-1.333-1.225$ as $-2.2204460492\allowbreak5031\text{\sc{e}}-16$ instead of 0. Similar to the previous example, our tool is able to catch this loss of precision if the computation is done in multiple steps.

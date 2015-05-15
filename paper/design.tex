@@ -1,0 +1,84 @@
+\section{Design}
+
+\subsection{Floating-point Numbers}
+Although our implementation was a relatively complex set of changes to the LLVM interpreter~\cite{lli}, our design is exceedingly simple.
+
+Floating-point numbers are represented as a significand (also known as the mantissa), representing the significant digits, and an exponent, representing the magnitude of the number. Each floating-point number represents an uncountably infinite set of real numbers. As such, the set of reals represented by a floating-point number
+
+$$ f = d.ddd...dd \times b^e $$
+
+is defined as the real numbers falling in the ball centered at $f$ with
+radius:
+
+$$ 0.000...00d\prime \times b^e $$
+
+where $d\prime$ is the digit $b/2$, assuming an even base. If floating-point numbers actually used interval arithmetic, then multiplication and addition would lead to ever increasing intervals. In the worst case, the interval could be large enough to make each digit in the significand meaningless.
+
+Our tool aims to use much higher precision numbers so that the intervals stay much smaller than the regular precision numbers. We can then report the discrepancies between these numbers.
+
+\subsection{Augmented Floating-point Semantics}
+
+Floating-point imprecision can occur after any floating-point operation, depending on the magnitude and value of the arguments. We consider two sets of floating-point operations. Those that are floating-point valued and those that are not:
+
+\begin{align*}
+\oplus &::= /
+      \mid -
+      \mid +
+      \mid *
+      \mid sqrt
+      \mid abs
+      \mid exp
+      \mid cos \\
+      &\;\mid sin
+      \mid tan
+      \mid atan
+      \mid atan2
+      \mid \cdots \\
+\sqsubseteq &::= \;<\;
+           \mid \;\leq\;
+           \mid \;>\;
+           \mid \;\geq\;
+           \mid \;=\;
+           \mid \cdots
+\end{align*}
+
+Many of these operations have non-trivial relationships between input error and output error. We side-step all these issues by simply
+accompanying every floating-point number by a higher-precision partner.
+
+We perform a conceptually very simple program transformation. We replace every literal floating-point number with a pair of that literal represented in both floating-point precision as well as higher precision. Since both values are numbers and the product operator is a Functor, we can lift all numeric operations point-wise. We denote the higher precision representation of a number $x$ as $\highprec{x}$
+
+\begin{align*}
+    x &\mapsto (x, \highprec{x}) \\
+    (x, \highprec{x}) \oplus (y, \highprec{y}) &\mapsto (x \oplus y,\highprec{x} \oplus \highprec{y})
+\end{align*}
+
+Floating-point numbers interact with the other types of the C programming language at three specific points:
+
+\begin{itemize}
+\item conversion to integral-typed numbers,
+\item comparison operations, and
+\item output operations (such as \code{printf}).
+\end{itemize}
+
+\begin{figure*}
+\centering
+
+\begin{align*}
+    (INTTYPE)f &\mapsto checkPrecisionAndReport(f) ; (INTTYPE)f \\
+    (x, \highprec{x}) \sqsubseteq (y, \highprec{y})  &\mapsto \code{if} ((\highprec{x} \sqsubseteq \highprec{y}) \code{!=} (x \sqsubseteq y)) \code{then} report \code{fi} ; (x \sqsubseteq y) \\
+    \code{printf}(fmt,(x, \highprec{x})) &\mapsto \code{if} \code{strcmp}(\code{sprintf}(fmt, x), \code{sprintf}(fmt,\highprec{x})) \code{!=}
+    0 \\
+    & \;\;\;\;\;\; \code{then} report \code{fi} ; \code{printf}(fmt,(x, \highprec{x})) \\
+\end{align*}
+
+\caption{The program transformation that inserts precision checks.}
+\label{fig:checkPrecision}
+\end{figure*}
+
+We could simply make our interpreter an Abstract Interpretation and use
+approximations for other types, such as sets of Booleans and integral
+intervals. This approach, however, did not seem particularly useful nor practical.
+
+Real Semantics inserts floating-point precision checks before these sorts of operations. We do not halt the execution, as this would prevent the discovery of further floating-point imprecision errors. Instead, we report the precision loss to the user. Again, we use a very conceptually simple program transformation depicted in Figure~\ref{fig:checkPrecision}.
+
+The $checkPrecisionAndReport$ function converts the high precision representation to the nearest low-precision number and checks for equality against the low-precision number. If the numbers are not equal then it reports the values, the variable name, the line number, and the file name based on their availability.

@@ -1,0 +1,20 @@
+\section{Discussion}
+
+\subsection{Limitations}
+
+When using Real Semantics it is important to keep in mind two key limitations of this system:
+
+\begin{itemize}
+\item higher-precision values are not arbitrary precision values, and
+\item higher-precision results do not reveal the \emph{correct} answer, just a more \emph{precise} answer.
+\end{itemize}
+
+An obvious extension to Real Semantics is the use of arbitrary precision arithmetic in place of \textsc{MPFR}'s fixed, high-precision arithmetic. Arbitrary precision arithmetic permits the use of whatever precision is necessary to represent intermediate results. Moreover, the memory and computation requirements adapt to the inputs given.
+
+Another possible extension is additionally reporting the results of applying the given inputs to an obviously correct reference implementation. Reference implementations guard against numerical transformations to an algorithm that changes its functional behavior. In particular, the ``return 0'' function will always be maximally precise.
+\\
+\subsection{Applications}
+
+Real Semantics nicely complements existing techniques for static analysis. Particularly because it dynamically searches for precision loss in imperative code, including code with loops. In this manner, it is more general and limited than Herbie \cite{herbie}. The two tools together form a powerful work-flow for debugging and developing floating-point algorithms. Real Semantics directs the programmer towards problematic areas of code. Once the algorithm at fault is crisply circumscribed and understood, Herbie may be employed to automatically generate a precise-by-construction implementation of the problematic algorithm.
+
+Real Semantics also holds pedagogical value. Floating-point imprecision often seems arbitrary to students. Real Semantics provides a mechanical assistant that calculates an approximation to the error inherent in a given floating-point number. Calculating this error from first principles is complex, even with specific floating-point inputs. Because Real Semantics permits the user to provide the test cases, the student can explore the space of floating-point numbers independently. This is not easy with verification or static analysis tools. An improvement that benefits both students and developers would be a visual representation of inputs that cause dramatic reductions in floating-point precision.

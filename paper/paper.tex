@@ -1,0 +1,80 @@
+\documentclass[blockstyle]{sigplanconf}
+
+\toappear{Permission to make digital or hard copies of all or part of this work for personal or classroom use is 	granted without fee provided that copies are not made or distributed for profit or commercial advantage and that copies bear this notice and the full citation on the first page. \\
+{\emph{CS260r'15}}, Harvard University. May 15, 2015, Cambridge, Massachusetts, USA.\\
+Copyright \copyright~2015 ... \$999999999999.99.}
+
+% Load basic packages
+\usepackage{amsmath}
+\usepackage{graphicx} % for EPS, load graphicx instead
+\usepackage{times}    % comment if you want LaTeX's default font
+\usepackage{url}      % llt: nicely formatted URLs
+\usepackage{listings}
+\usepackage[english]{babel}
+\usepackage{xcolor}
+\lstset{  language=C
+        , basicstyle=\ttfamily
+        , keywordstyle=\color{blue!70!black}\ttfamily
+        , stringstyle=\color{red!70!black}\ttfamily
+        , commentstyle=\color{green!70!black}\ttfamily
+        , morecomment=[l][\color{magenta!70!black}]{\#}.
+        , numbers=left
+        , xleftmargin=5.0ex
+        }
+
+% To make various LaTeX processors do the right thing with page size.
+\def\pprw{8.5in}
+\def\pprh{11in}
+\special{papersize=\pprw,\pprh}
+\setlength{\paperwidth}{\pprw}
+\setlength{\paperheight}{\pprh}
+\setlength{\pdfpagewidth}{\pprw}
+\setlength{\pdfpageheight}{\pprh}
+
+% create a shortcut to typeset table headings
+\newcommand\tabhead[1]{\small\textbf{#1}}
+\newcommand\smartfloat{\texttt{SmartFloat}}
+
+\newcommand{\code}[1]{\;\texttt{#1}\;}
+\newcommand{\highprec}[1]{\hat{#1}}
+
+\renewcommand{\footnotesize}{\scriptsize}
+
+% End of preamble. Here it comes the document.
+
+\begin{document}
+
+\noindent
+
+\title{Real Semantics: Capturing Floating-Point Imprecision}
+
+\authorinfo{Hannah Blumberg\and~Yihe Huang\and~Dan King\and~Paola Mariselli}
+  {School of Engineering and Applied Sciences, Harvard University}
+  {hannahblumberg@college.harvard.edu\and~yihehuang@g.harvard.edu\\daniel.zidan.king@gmail.com\and~paolamariselli@fas.harvard.edu}
+
+\maketitle
+
+\begin{abstract}
+Floating-point numbers and their respective arithmetic operations are often used with the assumption of a certain level of precision. However, there are times when exact precision is necessary. In these cases, floating-point arithmetic is defective in that it is fundamentally interval arithmetic wherein the interval lengths are a function of the median point.
+
+Therefore, we present Real Semantics, an automated tool that reasons about the accuracy of floating-point arithmetic. Real Semantics systematically discovers instances where the floating-point arithmetic result is not the most accurate floating-point approximation to the real number implied by any given algorithm. Thereafter, Real Semantics shows the user where the discrepancy is taking place in the form of a line number and variable name.
+\end{abstract}
+
+\keywords{
+	Floating-point numbers. Floating-point arithmetic. Precision errors.
+}
+
+\input{intro.tex}
+\input{related.tex}
+\input{design.tex}
+\input{impl.tex}
+\input{eval.tex}
+\input{future.tex}
+\input{disqus.tex}
+\input{conclu.tex}
+
+\bibliographystyle{abbrvnat}
+
+\bibliography{ref}
+
+\end{document}

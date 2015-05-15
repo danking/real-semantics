@@ -1,0 +1,97 @@
+\section{Implementation}
+
+We present a modified version of the LLVM interpreter that catches floating-point imprecision, which interprets program in LLVM intermediate representation (IR)~\cite{llvmir}. We choose to work at the IR level in order to increase the power and flexibility of our tool. IR provides a version of the original source code that is both machine- and language-independent. As a result, our tool can be used to check any strongly-typed program that can be compiled to bitcode format. Furthermore, the IR is much a simpler language than most source code languages we wish to analyze, but does not lose any of the information necessary for accurate analysis.
+
+\subsection{Real Number Computations}
+Initially, we considered using a C++ package called RealLib for our real number computations \cite{reallib}. However, we soon found that this library was not exactly ready for use out-of-the-box. For example, the following code snippet output ``Infinity''.
+\\
+
+\texttt{RealLib::Real sum("0");}\\\\
+\texttt{std::cout << std::setprecision(15) << sum << std::endl;}
+\\
+
+Since RealLib seemed unable to correctly represent zero and is not well-supported or discussed online, we chose to use the GNU MPFR library instead. MPFR is a well-supported C library that can be used for multiple-precision floating-point computations with correct rounding \cite{mpfr}.
+
+MPFR correctly handles the situation mentioned above. The only shortcoming is that MPFR requires that we know a priori how much precision we will need to compute a particular answer. In general, the intermediate precision necessary to correctly compute an answer can be arbitrarily higher than the precision necessary to store the final result. For example, consider alternating between adding 0.1 and 10000000 ten million times. The final result, will use only a couple bits, as it is a multiple of ten, however, the intermediate values need to correctly store 10000000.1 which requires a greater number of bits.
+
+Nevertheless, for our purposes, MPFR was a better solution for real number computations than RealLib.
+
+\subsection{SmartFloat}
+\label{sec:smflt}
+
+Our tool is able to identify floating-point imprecision by attaching extra information to every \texttt{float} or \texttt{double} that is used in the source code. In particular, when a value of type \texttt{float} or \texttt{double} is created, we replace it with a \smartfloat. Each \smartfloat~contains the original \texttt{float} or \texttt{double} value along with a ``real'' representation of the value. The real representation uses MPFR to achieve 4,096 bits of precision.
+
+The \smartfloat~is then stored in a global map. Whenever a \texttt{float} or \texttt{double} is loaded from memory, the map is traversed to find the appropriate \smartfloat.
+
+At a high level, operations that are performed on the original \texttt{float} or \texttt{double} value are now performed twice: once on the \texttt{float} or \texttt{double} value with typical floating-point semantics and once on the ``real'' representation of the value with higher precision. This is described in detail in section~\ref{sec:constructs}.
+
+\subsection{Types in LLVM IR}
+
+The LLVM IR has a type system that is very similar to C and C++'s. Because of the useful type information at the IR level, the interpreter understands the type of the data being operated on. For example, when passing arguments to a function, the interpreter usually knows the exact type of each argument, unless it is explicitly casted to untyped bytes (or a pointer to untyped bytes) in the higher level language. Our modified interpreter provides additional semantics for data of \texttt{float} or \texttt{double} type by maintaining internal \smartfloat~objects. LLVM IR program constructs that operate on data of floating-point types will hence operate on these \smartfloat~objects instead.
+
+Note that the newly introduced \smartfloat~type is not an extension to the LLVM IR. We are only introducing \smartfloat~objects when interpreting programs in LLVM IR.
+
+\subsection{Supported Program Constructs}
+\label{sec:constructs}
+
+Since our tool operates at the LLVM IR level, we extend the implementations of certain LLVM IR constructs in the LLVM interpreter to provide additional semantics. We will describe the changes made into these constructs here in detail.
+
+\subsubsection{Floating-Point Binary Operations}
+
+Floating-point binary operation instructions, or BINOPs, are floating-point operations that take two operands. In many programs, most floating-point instructions are BINOPs, such as add, subtract, and multiply. The original LLVM interpreter has a macro that handles these instructions, and we modify that macro such that it performs the requested BINOP on both the native floating-point value and the ``real'' value in MPFR. As mentioned above, both the floating-point value and the ``real'' value reside in a \smartfloat~object managed by the interpreter.
+
+\subsubsection{Floating-Point Conversions}
+
+Floating-point conversion instructions are floating-point truncation and extension operations that convert a floating-point value to either a different floating-point format or an integer. For conversions between floating-point numbers, we keep the ``real'' value in our \smartfloat~object unchanged and perform a type cast on the floating-point value as required. Our aim is to be careful about conversions between floating-point values and integers because the two representations of the same value in a \smartfloat~object could be rounded to different integers due to floating-point imprecision. For this reason, we conduct a precision check before the conversion. See section~\ref{sec:detecting_errors} for more details.
+
+\subsubsection{Function Calls}
+\label{sec:func_calls}
+
+Function calls are the most complicated program constructs we must support in a usable system. For ease of implementation and also performance reasons, we categorize function calls in a program into three classes and interpret them separately.
+
+The first class of functions are called {\em intercepted} functions because they are not actual function calls (i.e. an unconditional jump followed by stack allocations) but are instead intercepted and short-circuited within the interpreter. We initially referred to them as math library functions, however, upon further examination, we discovered we needed to intercept more functions than just math library functions in order to make the tool more usable. Despite the change in terminology, though, most functions in this class are indeed math library functions. When a program calls a math library function like {\tt sin}, the interpreter will perform the requested math operation on both the floating-point value and the real value - using library functions from both the C math library and the MPFR math library.
+
+We also intercept the \texttt{printf} function due to its unique semantics (e.g. depending on the format string, the actual output of \texttt{printf} may be the same even if different floating-point values are passed to it). See section~\ref{sec:detecting_errors} for more details.
+
+The second class of functions are {\em external} functions. An LLVM IR program may contain references to functions provided by external libraries that are not available in LLVM bitcode format. For the tool to be useful, these functions have to be properly handled because otherwise our tool will not have been compatible with any program that conducts any type of system calls, such as writing a file or printing to {\tt stdout}. Therefore, Real Semantics follows a solution the original LLVM interpreter adopts which is to use a library called Foreign Function Interface (FFI)~\cite{ffi} to solve this problem.
+
+Since FFI has no knowledge about the \smartfloat~object our tool uses under the hood, we have to prepare arguments of FFI calls properly so that all floating-point values are downgraded to native floating-point formats. Our interpreter will inspect the type information of the argument list at the call site and perform conversions when necessary. Again, floating-point imprecision can potentially affect the behavior of external functions. See section~\ref{sec:detecting_errors} for more details.
+
+The rest of the functions are {\em internal} functions declared and defined within the LLVM IR program. These functions can handle \smartfloat~objects correctly because they are completely interpreted by the interpreter.
+
+Another issue that comes up with supporting function calls is memory management. Memory allocated on stack shall be freed and reused after the function returns, but since we maintain a \smartfloat~map (see section~\ref{sec:smflt}) that is separate from the actual memory, it is hard to track all the floating-point values being allocated and freed during a function call. Our reliance on type information also causes some issues when we try to handle \texttt{malloc} and \texttt{free} correctly.
+
+Consequently, we choose an approach that strikes a good balance between simplicity and completeness: we do not actively free \smartfloat~objects that represent floating-point values allocated on stack, but we erase them from the map when we detect that non-floating-point values have been written to overlapping memory regions. This ``on-demand'' garbage collection scheme does assume that the original program does not contain undefined behaviors like reading from unallocated or uninitialized memory.
+
+\subsubsection{Untyped Memory Access to Floating-point Values}
+
+Untyped memory accesses bypass our special machinery handling floating-point numbers in the interpreter because of the lack of type information. Most of these accesses take the form of calling the \texttt{memcpy} function or methods alike that move bytes around without understanding the content of the data being moved. When floating-point values stored in memory are being accessed in this way, the interpreter cannot construct or keep track of \smartfloat~objects correctly. We originally planned not to address this problem as we did not expect untyped floating-point accesses to be common. However, we later discovered that due to compiler optimizations, \texttt{memcpy} calls are often inserted by the compiler to initialize global variables or large arrays. Due to the ubiquity of \texttt{memcpy} usage in programs, we decided that we had to address this untyped access problem - at the very least at a superficial level.
+
+Thus, we use a workaround that also assumes the correctness of the program being interpreted. Whenever we do a typed ``load'' of a floating-point value from memory, we will first try to find it in the \smartfloat~map. If the memory address requested is not found in the map, the interpreter will load a value as a floating-point directly from the memory address supplied, construct a fresh \smartfloat~object out of this value, and insert it to the map. Note that we are only doing this trick when we do a typed load. We consider it to be sufficient because before anything interesting (like a BINOP) happens, the floating-point value must be loaded with its type information so that the execution engine, let it be the interpreter or the actual hardware, can operate on it using the correct semantics.
+
+\subsection{Detecting Errors}
+\label{sec:detecting_errors}
+
+Throughout the program's execution, the two values stored in each \smartfloat~are compared in order to determine if there was a loss of precision using the typical floating-point semantics. 
+
+In order to compare the two values, the ``real'' representation is converted into the closest possible floating-point representation. If the two are not equal, our tool reports the loss of precision. The programmer is told the expected and actual value, along with the variable name and line number if available.
+
+Although the current implementation of our tool requires that the floating-point numbers used are the closest possible representations of the real values, we could easily introduce an adjustable threshold that would allow the programmer to set an ``acceptable'' range of imprecision. If the floating-point representation is within an ``acceptable'' range, we would not display any error messages.
+
+The aforementioned comparisons are made when
+
+\begin{itemize}
+\item an external function is called with a \smartfloat~as an argument,
+\item a comparison operation involving a \smartfloat~occurs, or
+\item a conversion from a \texttt{float} or \texttt{double} to an integral type takes place.
+\end{itemize}
+
+We need to check for a loss of precision before passing a \smartfloat\allowbreak to an external function because we cannot perform the ``real'' computations that correspond to the potential floating-point computations that occur within the external function.
+
+There are a few exceptions to this rule. First, we intercept several functions including 46 of the 58 \texttt{cmath} library functions and perform the appropriate ``real'' computations alongside the floating-point computations (see section~\ref{sec:func_calls} for more details). As a result, we do not check for precision loss before passing a \smartfloat~to one of these intercepted \texttt{cmath} functions.
+
+A second special case is \texttt{printf}. We aim to report a loss of precision in a printed floating-point value only if it will affect the string printed. If the programmer uses \texttt{printf} to print a \texttt{float} or \texttt{double} value, we make a best-effort attempt to compare output string produced using the \texttt{float} or \texttt{double} value with the output string produced using the ``real'' representation of the value. It is not an exact comparison given the complexity of the LLVM interpreter external function code (i.e. using \texttt{sprintf} is not straightforward). If the best effort comparison determines that the strings are different, a loss of precision is reported.
+
+Additionally, when a comparison operation involving \smartfloat\allowbreak occurs, we perform the comparison twice: once using the \texttt{float} or \texttt{double} value(s) and once using the ``real'' representation of the value(s). If the Boolean results of these two comparisons are not equal, we consider the loss of precision significant and display an error.
+
+Finally, we check for a loss of precision when performing a conversion from a \texttt{float} or \texttt{double} to an integral type because we will no longer maintain the ``real'' representation of the value if it is not a \texttt{float} or \texttt{double}.

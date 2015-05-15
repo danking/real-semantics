@@ -1,0 +1,23 @@
+\section{Introduction}
+
+\subsection{Motivation}
+
+It is impossible to represent infinitely many real numbers using finitely many bits. As a result, most computer systems that aim to work with real numbers use the floating-point system to represent real numbers.
+
+Despite the frequency with which floating-point numbers and their associated operations are used, floating-point numbers have many confusing properties that make it difficult to use them correctly. For example, floating-point operations are not closed and are generally not associative. That is, a binary operation that takes two floating-point values may not result in a value that can be exactly represented in the floating-point system. Consequently, the value must be rounded or truncated. Precision loss due to rounding or truncation causes operations to produce different results when applied to the floating-point values in different orders~\cite{whateverycomputer}. In most applications, the precision loss due to sloppy programming is insignificant and does not impose a threat to correctness. However, because of the silent nature of these kind of errors, small errors in floating-point numbers can accumulate and cause more severe problems.
+
+One such severe problem occurring as a result of floating-point imprecision is the Ariane 5 rocket explosion. The \$500 million rocket owned by the European Space Agency was destroyed in 1996 due to a floating-point error. After the rocket launched, one of the systems produced a 64-bit floating-point number which was then sent to the on-board system. When the on-board system converted it into a 16-bit integer, an overflow error occurred and caused the main system to shut down. Since this error was unexpected, no coding policies had been implemented to safeguard against it~\cite{disasters}. This resulted in the system interpreting the change as a course change. This veered the rocket off course and caused a major disaster.
+
+Floating-point imprecision can also cause other major problems that cost businesses significant financial resources. Variances in digits when calculating floating-point arithmetic can cause numbers to be rounded the wrong direction. This in turn can cause numeric issues, which lead to errors in financial calculations, particularly when these small errors add up. Although most financial organizations take heed on this issue and use other data representations instead, every so often floating-point errors re-surface. For example, with the introduction of the EURO, when old local currencies were converted to the EURO or to other local currencies, conversion, reconversion, and totalising errors occurred \cite{disasters}.
+
+\subsection{Contributions}
+
+Given that floating-point errors are so important to programmers and the products they create, we built Real Semantics, a dynamic floating-point imprecision detector based on the LLVM interpreter. This tool captures significant floating-point imprecision and reports it to the user. By doing this, we expose otherwise silent floating-point precision errors that may eventually cause significant, yet difficult-to-detect bugs.
+
+Thus, our main contribution is a modified LLVM interpreter that:
+
+\begin{itemize}
+\item tracks higher-precision representations of the numbers calculated by the interpreted program,
+\item notifies the user of floating-point imprecision \emph{only when} it substantially changes the behavior of the program, and
+\item identifies precision loss events by operation, variable name, and/or location (file name and line number).
+\end{itemize}

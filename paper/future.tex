@@ -1,0 +1,17 @@
+\section{Future Work}
+\label{sec:future}
+Real Semantics achieved a number of goals outlined at the beginning of this paper. Nevertheless, there is still room for growth. Specifically, we find that there are key areas where our system could be further optimized to allow for better results.
+
+\subsection{Performance Optimization}
+The performance of our tool is a limiting factor right now, and its poor performance is largely due to the overhead of interpreting LLVM bitcode. The interpreter unfortunately introduces large overhead to all instructions, including integer and branch instructions that have nothing to do with floating-point semantics. Maintaining the internal states of the interpreter like the large \smartfloat~map also comes at a cost that is largely unnecessary if we can execute (at least part of) the program natively.
+
+A potential solution to this issue would be to re-write our tool as a compiler pass. Doing so would allow the non-floating-point-related portion of the program to run completely on the native platform. This is an approach that we would potentially explore as part of future work.
+
+If our tool existed as a compiler pass we could additionally improve the precision of our high-precision floating-point numbers. We do not see floating-point numbers until the C compiler has transformed them to single- or double-precision bitvectors. Numeric literals, such as $3.3$ that are not accurately representable in double-precision are already inaccurate by the time we generate a higher-precision analogue. This is particularly disappointing because the high-precision value is initialized by extending the low-precision value with zeros.
+
+\subsection{Evaluation Optimization}
+Part of our larger goal was to evaluate our tool by running large programs and finding meaningful floating point precision errors. However, due to the performance issues outlined above, we were unable to run significantly large programs. In the future, once we optimize performance, we would like to evaluate our tool by running large programs or mathematical suites that would allow us to find a greater variety of floating-point precision bugs.
+
+In general, had we had more time, we would have liked to further automate the developing process by automatically generating test inputs. Such improvements would allow us to have a shorter development life-cycle and spend more time further optimizing the tool. Similarly, although we currently have a hack for \texttt{memcpy}, in the future, we would like our tool to be able to better handle memory issues.
+
+Analyzing large programs and suites of algorithms almost certainly requires a significant improvement to our testing strategy. In the future, we want to incorporate randomized swarm testing to alleviate the need for the user to custom design test-suites that reveal floating-point imprecision. As we have learned, programmers have difficulty imagining the way in which their programs may fail.
